@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production build outputs
+dist/
+**/dist/
+
+# Environment files
+.env
+.env.local
+**/.env
+
+# Certificate binary files (preserve empty folder with .gitkeep)
+storage/certificates/*
+!storage/certificates/.gitkeep
+backend/storage/certificates/*
+!backend/storage/certificates/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

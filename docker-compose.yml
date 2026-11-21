@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: certiflow_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: certiflow_user
+      POSTGRES_PASSWORD: certiflow_password
+      POSTGRES_DB: certiflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certiflow_user -d certiflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: certiflow_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: certiflow_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://certiflow_user:certiflow_password@postgres:5432/certiflow_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: super_secret_jwt_key_pragati_mission_2026
+      JWT_EXPIRES_IN: 24h
+      LARGE_BATCH_THRESHOLD: 50
+      BATCH_OVERDUE_SLA_HOURS: 48
+      SIMULATE_WHATSAPP_FAILURE_RATE: 0.20
+      SIMULATE_WHATSAPP_DELAY_MS: 1500
+      CERTIFICATE_STORAGE_DIR: /app/storage/certificates
+      PUBLIC_FRONTEND_URL: http://localhost:5173
+    volumes:
+      - certificate_storage:/app/storage/certificates
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: certiflow_worker
+    restart: always
+    command: ["node", "dist/workers/index.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://certiflow_user:certiflow_password@postgres:5432/certiflow_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CERTIFICATE_STORAGE_DIR: /app/storage/certificates
+      PUBLIC_FRONTEND_URL: http://localhost:5173
+      SIMULATE_WHATSAPP_FAILURE_RATE: 0.20
+      SIMULATE_WHATSAPP_DELAY_MS: 1500
+    volumes:
+      - certificate_storage:/app/storage/certificates
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: certiflow_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  certificate_storage:

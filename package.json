@@ -1,0 +1,15 @@
+{
+  "name": "certiflow",
+  "version": "1.0.0",
+  "description": "CertiFlow - Skilling Certificate Issuance Platform for Pragati Skills Mission",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "npm run dev:backend",
+    "start": "npm run dev:backend",
+    "test": "npm test --prefix backend",
+    "build": "npm run build --prefix frontend"
+  },
+  "author": "Mandalapu Vamsi",
+  "license": "ISC"
+}
